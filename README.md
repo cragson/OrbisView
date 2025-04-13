@@ -35,8 +35,8 @@ TODO: Add Github Action for automatically CI/CD workflow.
 
 ## **Setup & Build**
 1. Clone the repo **recursively**!
-    - With HTTPS: ``git clone --recursively https://github.com/cragson/orbisview``
-    - With SSH: ``git clone --recursively git@github.com:cragson/orbisview``
+    - With HTTPS: ``git clone --recursive https://github.com/cragson/orbisview``
+    - With SSH: ``git clone --recursive git@github.com:cragson/orbisview``
 2. **Make sure your PS5 has already the ``elfldr`` running and is reachable from your network!**
 3. Build the ``orbisview.elf`` payload by running the ``debug.sh``
     - Allow script execution: ``chmod +x debug.sh``
