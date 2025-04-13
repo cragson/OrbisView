@@ -1,0 +1,3 @@
+[submodule "source/nihonium"]
+	path = source/nihonium
+	url = git@github.com:cragson/nihonium

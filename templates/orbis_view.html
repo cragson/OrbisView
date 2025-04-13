@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OrbisView 0.2.0</title>
+  <style>
+    body { 
+      font-family: monospace; 
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      color: darkgrey; 
+    }
+    h1 { font-size: 24px; }
+    /* Static sidebar style */
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 300px;
+      background-color: #333;
+      color: darkgrey;
+      overflow-y: auto;
+      padding: 20px;
+      border-right: 1px solid #424242;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Sidebar menu header */
+    #sidebar h2 {
+      font-size: 20px;
+      margin: 0 0 10px 0;
+      border-bottom: 1px solid #424242;
+      padding-bottom: 5px;
+    }
+    /* The emoji preceding the menu title */
+    #sidebar .emoji {
+      margin-right: 5px;
+    }
+    /* Sidebar menu list */
+    #sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    #sidebar li {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #424242;
+    }
+    #sidebar li:hover {
+      background-color: #424242;
+      color: aqua;
+    }
+    /* Container for dynamically loaded process entries */
+    #processMenu {
+      margin-top: 10px;
+    }
+    .process-entry {
+      padding: 6px;
+      border-bottom: 1px solid #424242;
+      cursor: pointer;
+      margin-bottom: 5px;
+      color:#cfcfcf;
+    }
+    .process-entry:hover {
+      background-color: #424242;
+      color: aqua;
+    }
+
+    .process-entry-pid, .process-entry-state {
+      font-size: x-small;
+    }
+
+    .process-details {
+      margin-left: 10px;
+      margin-top: 5px;
+      border-left: 2px solid #424242;
+      padding-left: 5px;
+    }
+    .image-entry {
+      padding: 3px;
+      margin: 3px 0;
+      border: 1px solid #424242;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .image-entry:hover {
+      background-color: #424242;
+    }
+
+    #sidebarFooter {
+      margin-top: auto;
+      text-align: center;
+      font-size: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #424242;
+      color:aqua;
+    }
+    #sidebarFooter a {
+      color: darkgrey;
+      text-decoration: none;
+      margin: 30px 5px;
+      padding: 30px 5px;
+      color: white;
+    }
+    #sidebarFooter a:hover {
+      text-decoration: underline;
+    }
+
+    /* Main content container; left margin accommodates static sidebar plus some space */
+    #main {
+      margin-left: 320px;
+      padding: 20px;
+    }
+    /* Existing tab and memory view styles */
+    #tabs { margin-bottom: 10px; }
+    .tab {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #424242;
+      cursor: pointer;
+      margin-right: 5px;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab.active {
+      background: #5e5e5e;
+      font-weight: bold;
+    }
+    .tab-content {
+      border: 1px solid #3a3939;
+      border-top: none;
+      padding: 10px;
+      margin-top: -5px;
+    }
+    .hex-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 10px;
+    }
+    .hex-table th, .hex-table td {
+      border: 1px solid #424242;
+      padding: 4px;
+      text-align: left;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .hex-table th { background-color: #3a3939; }
+    .memory-view { margin-top: 10px; }
+    .editable {
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: bold;
+      width: 100px;
+    }
+    /* UI Buttons */
+    #addTabBtn, #addBytesBtn1, #addBytesBtn2 { 
+      padding: 6px 10px;
+      background: #167440;
+      cursor: pointer;
+      margin-right: 5px;
+      border: none;
+      border-radius: 4px;
+      color: rgb(255, 255, 255);
+    }
+
+    #shutdownBtn, #subBytesBtn1, #subBytesBtn2, #removeTabBtn {
+      padding: 6px 10px;
+      background: #752828;
+      cursor: pointer;
+      margin-right: 5px;
+      border: none;
+      border-radius: 4px;
+      color: rgb(255, 255, 255);
+    }
+
+    .offset-sep {
+      color: rgb(20, 173, 220);
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h2><span class="emoji">🛠</span> Menu</h2>
+    <ul>
+      <li id="scanProc" onclick="toggleProcessMenu()">🧐 Scan Processes</li>
+      <li id="scritpExecuter" onclick="alert('never gonna give you up, never gonna let you down')">🍆 Script Executer</li>
+      <li id="shutdownPayload" onclick="shutdownPayload()">💔 Shutdown Payload</li>
+    </ul>
+
+    <!-- This container will hold the list of active processes when Scan Processes is pressed -->
+    <div id="processMenu" style="display:none;"></div>
+    
+    <!-- Footer with credit and social links -->
+    <div id="sidebarFooter">
+      Made by cragson with 🧡<br>
+      <a href="https://github.com/cragson" target="_blank">
+        GitHub
+      </a>
+      <a href="https://youtube.com/@cragson" target="_blank">
+        YouTube
+      </a>
+    </div>
+  </div>
+  
+  <div id="main">
+    <h1>OrbisView 0.2.0</h1>
+    <!-- UI Buttons outside the sidebar -->
+    <button id="addTabBtn" onclick="addTab()">+ Tab</button>
+    <button id="addBytesBtn1" onclick="addBytes(512)">+ 512 Bytes</button>
+    <button id="addBytesBtn2" onclick="addBytes(1024)">+ 1024 Bytes</button>
+    <br><br>
+    <button id="removeTabBtn" onclick="removeTab()">- Tab</button>
+    <button id="subBytesBtn1" onclick="subBytes(512)">- 512 Bytes</button>
+    <button id="subBytesBtn2" onclick="subBytes(1024)">- 1024 Bytes</button>
+    <br>
+    <br>
+    <div id="tabs"></div>
+    <div id="tabContents"></div>
+  </div>
+  
+  <script>
+    let tabCount = 0;
+    let activeTabId = null;
+    let BLOCK_LENGTH = 1024; // bytes to read
+
+    function addBytes(bytes) {
+      BLOCK_LENGTH += bytes;
+
+      const tabId = 'tab' + tabCount;
+
+      readBlock( tabId );
+
+      document.getElementById("bytes-shown").innerText = "Bytes shown: " + BLOCK_LENGTH;
+    }
+
+    function subBytes(bytes) {
+      if( BLOCK_LENGTH - bytes <= 0 )
+        return;
+
+      BLOCK_LENGTH -= bytes;
+
+      const tabId = 'tab' + tabCount;
+
+      readBlock( tabId );
+
+      document.getElementById("bytes-shown").innerText = "Bytes shown: " + BLOCK_LENGTH;
+    }
+
+    function removeTab() {
+      if( tabCount <= 1 )
+        return;
+
+      const tabId = 'tab' + tabCount;
+
+      document.getElementById( tabId ).remove();
+
+      tabCount -= 1;
+
+      activateTab( 'tab' + tabCount );
+    }
+
+    // Function to add a new tab
+    function addTab() {
+      tabCount++;
+      const tabId = 'tab' + tabCount;
+      
+      // Create tab header with editable name.
+      const tabHeader = document.createElement('div');
+      tabHeader.className = 'tab';
+      tabHeader.id = tabId;
+      const nameSpan = document.createElement('span');
+      nameSpan.contentEditable = true;
+      nameSpan.spellcheck = false;
+      nameSpan.innerText = 'Tab ' + tabCount;
+      nameSpan.onblur = () => { tabHeader.dataset.name = nameSpan.innerText; };
+      tabHeader.appendChild(nameSpan);
+      tabHeader.onclick = () => activateTab(tabId);
+      document.getElementById('tabs').appendChild(tabHeader);
+
+      // Create tab content.
+      const tabContent = document.createElement('div');
+      tabContent.className = 'tab-content';
+      tabContent.id = tabId + '-content';
+      tabContent.innerHTML = `
+        <div>
+          <label>Memory Address: <input type="text" id="${tabId}-address" placeholder="e.g. 0x1000"></label>
+          &nbsp;
+          <label>Interpretation:
+            <select id="${tabId}-type">
+              <option value="uint8_t">uint8_t (1 byte)</option>
+              <option value="uint16_t">uint16_t (2 bytes)</option>
+              <option value="uint32_t">uint32_t (4 bytes)</option>
+              <option value="uint64_t">uint64_t (8 bytes)</option>
+              <option value="hex64" selected="selected">hex64</option>
+              <option value="ascii">ascii</option>
+              <option value="float">float (4 bytes)</option>
+              <option value="int64_t">int64_t (8 bytes)</option>
+            </select>
+          </label>
+          <button onclick="readBlock('${tabId}')">Read Memory</button>
+        </div>
+        <div class="memory-view" id="${tabId}-output">
+          Memory output will appear here...
+        </div>
+      `;
+      document.getElementById('tabContents').appendChild(tabContent);
+      activateTab(tabId);
+    }
+
+    // Activate a tab.
+    function activateTab(tabId) {
+      Array.from(document.getElementsByClassName('tab')).forEach(tab => tab.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      Array.from(document.getElementsByClassName('tab-content')).forEach(content => content.style.display = 'none');
+      document.getElementById(tabId + '-content').style.display = 'block';
+      activeTabId = tabId;
+      document.getElementById("bytes-shown").innerText = "Bytes shown: " + BLOCK_LENGTH;
+    }
+
+    // Convert hex string to ArrayBuffer.
+    function hexToArrayBuffer(hex) {
+      let bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+      }
+      return bytes.buffer;
+    }
+
+    // Get group size for the selected type.
+    function getGroupSize(type) {
+      if( type === 'uint8_t' || type === 'ascii' ) return 1;
+      else if( type === 'uint16_t' ) return 2;
+      else if( type === 'uint32_t' || type === 'float' ) return 4;
+      else if( type === 'uint64_t' || type === 'int64_t' || 'hex64' ) return 8;
+      else return 1;
+    }
+
+    // Interpret a value at given offset.
+    function interpretValue(dataView, offset, type) {
+      try {
+        if (type === 'uint8_t') return dataView.getUint8(offset);
+        else if (type === 'ascii') {
+          let u8 = dataView.getUint8(offset);
+          return (u8 >= 32 && u8 <= 126) ? String.fromCharCode(u8) : '.';
+        }
+        else if( type === 'uint16_t' ) return dataView.getUint16(offset, false);
+        else if( type === 'uint32_t' ) return dataView.getUint32(offset, false);
+        else if( type === 'float' ) return dataView.getFloat32(offset, false).toFixed(4);
+        else if( type === 'uint64_t' ) return dataView.getBigUint64( offset, false );
+        else if( type === 'int64_t' ) return dataView.getBigInt64( offset, false );
+        else if( type === 'hex64' ) {
+          let high = dataView.getUint32(offset, true);
+          let low = dataView.getUint32(offset + 4, true);
+          return parseInt( low, 10 ).toString( 16 ).toUpperCase() + parseInt( high, 10 ).toString( 16 ).toUpperCase();
+        } else return "";
+      } catch (e) {
+        return "N/A";
+      }
+    }
+
+    // Render hex block as a hex editor view.
+    function renderHexBlock(hexData, type) {
+      let hexStr = hexData.replace(/\s/g, '');
+      if (hexStr.length < BLOCK_LENGTH * 2) {
+        hexStr = hexStr.padEnd(BLOCK_LENGTH * 2, '0');
+      }
+      let buffer = hexToArrayBuffer(hexStr);
+      let dataView = new DataView(buffer);
+      const groupSize = getGroupSize(type);
+      const bytesPerRow = 8;
+      let html = '<table class="hex-table"><thead><tr><th>Offset</th><th>Hex Bytes</th><th>Interpreted Values</th></tr></thead><tbody>';
+      const numRows = BLOCK_LENGTH / bytesPerRow;
+      for (let row = 0; row < numRows; row++) {
+        let offset = row * bytesPerRow;
+        let offsetStr = '0x' + offset.toString(16).padStart(4, '0');
+        let hexBytes = '';
+        for (let i = 0; i < bytesPerRow; i++) {
+          hexBytes += hexStr.substr((offset + i) * 2, 2) + ' ';
+        }
+        let interp = '';
+        let groupsPerRow = Math.floor(bytesPerRow / groupSize);
+        for (let g = 0; g < groupsPerRow; g++) {
+          interp += interpretValue(dataView, offset + g * groupSize, type) + ' ';
+        }
+        if( offset % 0x100 != 0 )
+          html += `<tr><td>${offsetStr}</td><td>${hexBytes.trim()}</td><td>${interp.trim()}</td></tr>`;
+        else
+          html += `<tr><td class="offset-sep">${offsetStr}</td><td>${hexBytes.trim()}</td><td>${interp.trim()}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // Request memory block from backend.
+    function readBlock(tabId) {
+      const address = document.getElementById(tabId + '-address').value;
+      const type = document.getElementById(tabId + '-type').value;
+      if (!address) {
+        document.getElementById(tabId + '-output').innerText = "Please enter a memory address.";
+        return;
+      }
+      fetch(`/read_block?address=${encodeURIComponent(address)}&length=${BLOCK_LENGTH}`)
+        .then(response => response.json())
+        .then(data => {
+          let outputDiv = document.getElementById(tabId + '-output');
+          if (data.error) {
+            outputDiv.innerText = data.error;
+          } else {
+            outputDiv.innerHTML = `<div id="bytes-shown">Bytes shown: ${BLOCK_LENGTH}</div>` +
+                                  renderHexBlock(data.data, type);
+          }
+        })
+        .catch(err => {
+          document.getElementById(tabId + '-output').innerText = "Error: " + err;
+        });
+    }
+
+    // Toggle the display of the process menu in the sidebar.
+    function toggleProcessMenu() {
+      const processMenu = document.getElementById('processMenu');
+      if (processMenu.style.display === 'none' || processMenu.style.display === '') {
+        processMenu.style.display = 'block';
+        loadProcesses();
+      } else {
+        processMenu.style.display = 'none';
+      }
+    }
+
+    // Load active processes from the backend.
+    function loadProcesses() {
+      fetch('/get_procs')
+        .then(response => response.json())
+        .then(data => {
+          // Expected response format: "process1 1337 state, process2 420 state"
+          const procList = data.processes.split(',');
+          const processMenu = document.getElementById('processMenu');
+          processMenu.innerHTML = ''; // Clear previous content.
+          procList.forEach(item => {
+            const parts = item.trim().split(' ');
+            // Expect at least three parts: process name, pid, and process state.
+            if (parts.length >= 3) {
+              const procState = parts.pop();      // Last element: process state.
+              const procPid = parts.pop();         // Second-to-last: process id.
+              const procName = parts.join(' ');    // Remaining elements form the process name.
+              const procDiv = document.createElement('div');
+              procDiv.className = 'process-entry';
+              procDiv.innerText = `${procName}\n`;
+              procDiv.onclick = function(e) {
+                e.stopPropagation();
+                toggleProcessDetails(this, procName);
+              };
+
+              const a_pid = document.createElement('a');
+              a_pid.className = 'process-entry-pid';
+              a_pid.innerText = `PID: ${procPid}\n`;
+
+              const a_state = document.createElement('a');
+              a_state.className = 'process-entry-state';
+              a_state.innerText = `State: ${procState}`;
+
+              procDiv.append( a_pid );
+              procDiv.append( a_state );
+
+              processMenu.appendChild( procDiv );
+            }
+          });
+        })
+        .catch(err => {
+          console.error("Error loading processes:", err);
+          document.getElementById('processMenu').innerText = "Error loading processes.";
+        });
+    }
+
+    // Toggle and load process details (loaded images) for a process.
+    function toggleProcessDetails(element, processName) {
+      // If details are already present, toggle visibility.
+      if (element.nextElementSibling && element.nextElementSibling.classList.contains('process-details')) {
+        const detailsDiv = element.nextElementSibling;
+        detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+      } else {
+        const detailDiv = document.createElement('div');
+        detailDiv.className = 'process-details';
+        detailDiv.innerHTML = 'Loading...';
+        element.parentNode.insertBefore(detailDiv, element.nextSibling);
+        fetch('/get_proc_info?process=' + encodeURIComponent(processName))
+          .then(response => response.json())
+          .then(data => {
+            // Expected response: { "info": "img1 0x12345 4096, img2 0x23456 8192" }
+            const imagesList = data.info.split(',');
+            let innerHtml = '';
+            imagesList.forEach(item => {
+              const parts = item.trim().split(' ');
+              if (parts.length >= 3) {
+                const imgName = parts[0];
+                const baseAddr = parts[1];
+                const size = parts[2];
+                innerHtml += `<div class="image-entry" onclick="event.stopPropagation(); createTabForImage('${imgName}', '${baseAddr}')">
+                                ${imgName} (${baseAddr}, ${size})
+                              </div>`;
+              }
+            });
+            detailDiv.innerHTML = innerHtml;
+          })
+          .catch(err => {
+            console.error("Error loading process details:", err);
+            detailDiv.innerHTML = 'Error loading process info';
+          });
+      }
+    }
+
+    // Create a new tab based on an image entry.
+    function createTabForImage(imageName, baseAddress) {
+      addTab();
+      const tabsContainer = document.getElementById('tabs');
+      const tabHeaders = tabsContainer.getElementsByClassName('tab');
+      const newTab = tabHeaders[tabHeaders.length - 1];
+      newTab.querySelector('span').innerText = imageName;
+      const addressInput = document.getElementById(newTab.id + '-address');
+      if (addressInput) {
+        addressInput.value = baseAddress;
+      }
+    }
+
+    // Shutdown payload by calling the corresponding API endpoint.
+    function shutdownPayload() {
+      fetch('/terminate_payload')
+        .then(alert('Payload shutdown initiated.'));
+    }
+    
+    // Initialize with a default tab.
+    window.onload = () => { addTab(); };
+  </script>
+</body>
+</html>
+
